@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
+import html2canvas from "html2canvas";
+import jsPDF from "jspdf";
 
 export default function App() {
   const [items, setItems] = useState([]);
@@ -17,20 +19,15 @@ export default function App() {
     dueDate: "2025-09-10",
   });
 
+  const invoiceRef = useRef();
+
   const handleCompanyChange = (field, value) => {
     setCompanyInfo(prev => ({ ...prev, [field]: value }));
   };
 
   const addItem = () => {
     if (description && quantity && rate) {
-      setItems([
-        ...items,
-        {
-          description,
-          quantity: parseFloat(quantity),
-          rate: parseFloat(rate),
-        },
-      ]);
+      setItems([...items, { description, quantity: parseFloat(quantity), rate: parseFloat(rate) }]);
       setDescription("");
       setQuantity("");
       setRate("");
@@ -41,62 +38,69 @@ export default function App() {
     setItems(items.filter((_, i) => i !== index));
   };
 
-  const subtotal = items.reduce(
-    (sum, item) => sum + item.quantity * item.rate,
-    0
-  );
+  const subtotal = items.reduce((sum, item) => sum + item.quantity * item.rate, 0);
+
+  const downloadPDF = () => {
+    const input = invoiceRef.current;
+    html2canvas(input, { scale: 2 }).then((canvas) => {
+      const imgData = canvas.toDataURL("image/png");
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgProps = pdf.getImageProperties(imgData);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
+      pdf.save(`invoice-${companyInfo.invoiceDate}.pdf`);
+    });
+  };
 
   return (
     <div style={{ display: "flex", gap: "30px", fontFamily: "Arial, sans-serif", padding: "30px", background: "#f5f7fa" }}>
       
-      {/* Left Side: Input + Editable Company Info */}
+      {/* Left Side */}
       <div style={{ flex: 1 }}>
-        <h1 style={{ color: "#0A2342" }}>AI Invoice Generator</h1>
+        <h1>AI Invoice Generator</h1>
 
-        {/* Editable From Info */}
-        <h3 style={{ color: "#0A2342" }}>From:</h3>
+        {/* From Info */}
+        <h3>From:</h3>
         <input style={inputStyle} value={companyInfo.fromName} onChange={e => handleCompanyChange("fromName", e.target.value)} />
         <input style={inputStyle} value={companyInfo.fromAddress} onChange={e => handleCompanyChange("fromAddress", e.target.value)} />
         <input style={inputStyle} value={companyInfo.fromEmail} onChange={e => handleCompanyChange("fromEmail", e.target.value)} />
 
-        {/* Editable Bill To Info */}
-        <h3 style={{ color: "#0A2342" }}>Bill To:</h3>
+        {/* Bill To */}
+        <h3>Bill To:</h3>
         <input style={inputStyle} value={companyInfo.billToName} onChange={e => handleCompanyChange("billToName", e.target.value)} />
         <input style={inputStyle} value={companyInfo.billToAddress} onChange={e => handleCompanyChange("billToAddress", e.target.value)} />
         <input style={inputStyle} value={companyInfo.billToEmail} onChange={e => handleCompanyChange("billToEmail", e.target.value)} />
 
-        {/* Invoice Dates */}
-        <h3 style={{ color: "#0A2342" }}>Dates:</h3>
+        {/* Dates */}
+        <h3>Dates:</h3>
         <label>Invoice Date:</label>
         <input type="date" style={inputStyle} value={companyInfo.invoiceDate} onChange={e => handleCompanyChange("invoiceDate", e.target.value)} />
         <label>Due Date:</label>
         <input type="date" style={inputStyle} value={companyInfo.dueDate} onChange={e => handleCompanyChange("dueDate", e.target.value)} />
 
-        {/* Add Items */}
-        <h3 style={{ color: "#0A2342", marginTop: "20px" }}>Add Items</h3>
+        {/* Items */}
+        <h3 style={{ marginTop: "20px" }}>Add Items</h3>
         <input type="text" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} style={inputStyle} />
         <input type="number" placeholder="Qty" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={inputStyle} />
         <input type="number" placeholder="Rate" value={rate} onChange={(e) => setRate(e.target.value)} style={inputStyle} />
         <button onClick={addItem} style={buttonStyle}>Add</button>
+
+        {/* Download Button */}
+        <button onClick={downloadPDF} style={{ ...buttonStyle, backgroundColor: "#28a745", marginTop: "10px" }}>
+          📄 Download PDF
+        </button>
       </div>
 
-      {/* Right Side: Invoice Preview */}
-      <div style={{
+      {/* Invoice Preview */}
+      <div ref={invoiceRef} style={{
         flex: 1,
         background: "#fff",
         borderRadius: "10px",
         padding: "20px",
         boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
       }}>
-        <h2 style={{
-          background: "#0A2342",
-          color: "#fff",
-          padding: "10px",
-          borderRadius: "5px",
-          textAlign: "center"
-        }}>INVOICE</h2>
-
-        {/* From / To Info */}
+        <h2 style={{ background: "#0A2342", color: "#fff", padding: "10px", borderRadius: "5px", textAlign: "center" }}>INVOICE</h2>
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: "15px" }}>
           <div>
             <strong>From:</strong>
@@ -111,14 +115,10 @@ export default function App() {
             <p>{companyInfo.billToEmail}</p>
           </div>
         </div>
-
-        {/* Dates */}
         <div style={{ display: "flex", justifyContent: "space-between", margin: "10px 0" }}>
           <p><strong>Invoice Date:</strong> {companyInfo.invoiceDate}</p>
           <p><strong>Due Date:</strong> {companyInfo.dueDate}</p>
         </div>
-
-        {/* Items Table */}
         <table style={tableStyle}>
           <thead>
             <tr style={{ backgroundColor: "#0A2342", color: "#fff" }}>
@@ -137,22 +137,12 @@ export default function App() {
                 <td style={thTdStyle}>${item.rate.toFixed(2)}</td>
                 <td style={thTdStyle}>${(item.quantity * item.rate).toFixed(2)}</td>
                 <td style={thTdStyle}>
-                  <button
-                    onClick={() => removeItem(index)}
-                    style={{
-                      background: "transparent",
-                      border: "none",
-                      color: "#d9534f",
-                      cursor: "pointer",
-                    }}
-                  >❌</button>
+                  <button onClick={() => removeItem(index)} style={{ background: "transparent", border: "none", color: "#d9534f", cursor: "pointer" }}>❌</button>
                 </td>
               </tr>
             )) : (
               <tr>
-                <td colSpan="5" style={{ textAlign: "center", padding: "10px", color: "#888" }}>
-                  No items yet
-                </td>
+                <td colSpan="5" style={{ textAlign: "center", padding: "10px", color: "#888" }}>No items yet</td>
               </tr>
             )}
           </tbody>
@@ -172,7 +162,6 @@ export default function App() {
   );
 }
 
-// Reusable styles
 const inputStyle = {
   display: "block",
   width: "100%",
