@@ -17,7 +17,7 @@ export default function App() {
     dueDate: "2025-09-10",
   };
 
-  //const taxRate = 0.08; // 8%
+  const taxRate = 0.0; // 8%
 
   const addItem = () => {
     if (description && quantity && rate) {
