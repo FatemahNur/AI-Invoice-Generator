@@ -6,7 +6,7 @@ export default function App() {
   const [quantity, setQuantity] = useState("");
   const [rate, setRate] = useState("");
 
-  const companyInfo = {
+  const [companyInfo, setCompanyInfo] = useState({
     fromName: "Your Company Name",
     fromAddress: "123 Your Street, Your City, State 12345",
     fromEmail: "contact@yourcompany.com",
@@ -15,9 +15,11 @@ export default function App() {
     billToEmail: "billing@acme.com",
     invoiceDate: "2025-08-11",
     dueDate: "2025-09-10",
-  };
+  });
 
-  const taxRate = 0.0; // 8%
+  const handleCompanyChange = (field, value) => {
+    setCompanyInfo(prev => ({ ...prev, [field]: value }));
+  };
 
   const addItem = () => {
     if (description && quantity && rate) {
@@ -43,45 +45,39 @@ export default function App() {
     (sum, item) => sum + item.quantity * item.rate,
     0
   );
-  const tax = subtotal * taxRate;
-  const total = subtotal + tax;
 
   return (
     <div style={{ display: "flex", gap: "30px", fontFamily: "Arial, sans-serif", padding: "30px", background: "#f5f7fa" }}>
       
-      {/* Left Side: Input + Templates */}
+      {/* Left Side: Input + Editable Company Info */}
       <div style={{ flex: 1 }}>
         <h1 style={{ color: "#0A2342" }}>AI Invoice Generator</h1>
 
-        <div style={{ marginBottom: "20px" }}>
-          <input
-            type="text"
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            style={inputStyle}
-          />
-          <input
-            type="number"
-            placeholder="Qty"
-            value={quantity}
-            onChange={(e) => setQuantity(e.target.value)}
-            style={inputStyle}
-          />
-          <input
-            type="number"
-            placeholder="Rate"
-            value={rate}
-            onChange={(e) => setRate(e.target.value)}
-            style={inputStyle}
-          />
-          <button onClick={addItem} style={buttonStyle}>Add</button>
-        </div>
+        {/* Editable From Info */}
+        <h3 style={{ color: "#0A2342" }}>From:</h3>
+        <input style={inputStyle} value={companyInfo.fromName} onChange={e => handleCompanyChange("fromName", e.target.value)} />
+        <input style={inputStyle} value={companyInfo.fromAddress} onChange={e => handleCompanyChange("fromAddress", e.target.value)} />
+        <input style={inputStyle} value={companyInfo.fromEmail} onChange={e => handleCompanyChange("fromEmail", e.target.value)} />
 
-        <h3 style={{ color: "#0A2342" }}>Quick Templates</h3>
-        <div style={templateStyle}>Consulting Services</div>
-        <div style={templateStyle}>Product Sales</div>
-        <div style={templateStyle}>Subscription</div>
+        {/* Editable Bill To Info */}
+        <h3 style={{ color: "#0A2342" }}>Bill To:</h3>
+        <input style={inputStyle} value={companyInfo.billToName} onChange={e => handleCompanyChange("billToName", e.target.value)} />
+        <input style={inputStyle} value={companyInfo.billToAddress} onChange={e => handleCompanyChange("billToAddress", e.target.value)} />
+        <input style={inputStyle} value={companyInfo.billToEmail} onChange={e => handleCompanyChange("billToEmail", e.target.value)} />
+
+        {/* Invoice Dates */}
+        <h3 style={{ color: "#0A2342" }}>Dates:</h3>
+        <label>Invoice Date:</label>
+        <input type="date" style={inputStyle} value={companyInfo.invoiceDate} onChange={e => handleCompanyChange("invoiceDate", e.target.value)} />
+        <label>Due Date:</label>
+        <input type="date" style={inputStyle} value={companyInfo.dueDate} onChange={e => handleCompanyChange("dueDate", e.target.value)} />
+
+        {/* Add Items */}
+        <h3 style={{ color: "#0A2342", marginTop: "20px" }}>Add Items</h3>
+        <input type="text" placeholder="Description" value={description} onChange={(e) => setDescription(e.target.value)} style={inputStyle} />
+        <input type="number" placeholder="Qty" value={quantity} onChange={(e) => setQuantity(e.target.value)} style={inputStyle} />
+        <input type="number" placeholder="Rate" value={rate} onChange={(e) => setRate(e.target.value)} style={inputStyle} />
+        <button onClick={addItem} style={buttonStyle}>Add</button>
       </div>
 
       {/* Right Side: Invoice Preview */}
@@ -122,7 +118,7 @@ export default function App() {
           <p><strong>Due Date:</strong> {companyInfo.dueDate}</p>
         </div>
 
-        {/* Table */}
+        {/* Items Table */}
         <table style={tableStyle}>
           <thead>
             <tr style={{ backgroundColor: "#0A2342", color: "#fff" }}>
@@ -165,13 +161,9 @@ export default function App() {
               <td colSpan="3" style={tfootLabelStyle}>Subtotal:</td>
               <td colSpan="2" style={tfootValueStyle}>${subtotal.toFixed(2)}</td>
             </tr>
-            <tr>
-              <td colSpan="3" style={tfootLabelStyle}>Tax (8%):</td>
-              <td colSpan="2" style={tfootValueStyle}>${tax.toFixed(2)}</td>
-            </tr>
             <tr style={{ backgroundColor: "#0A2342", color: "#fff" }}>
               <td colSpan="3" style={{ padding: "10px", textAlign: "right", fontWeight: "bold" }}>Total:</td>
-              <td colSpan="2" style={{ padding: "10px", fontWeight: "bold" }}>${total.toFixed(2)}</td>
+              <td colSpan="2" style={{ padding: "10px", fontWeight: "bold" }}>${subtotal.toFixed(2)}</td>
             </tr>
           </tfoot>
         </table>
@@ -182,10 +174,12 @@ export default function App() {
 
 // Reusable styles
 const inputStyle = {
+  display: "block",
+  width: "100%",
   padding: "8px",
   border: "1px solid #ccc",
   borderRadius: "5px",
-  marginRight: "5px",
+  marginBottom: "5px",
 };
 
 const buttonStyle = {
@@ -195,6 +189,7 @@ const buttonStyle = {
   borderRadius: "5px",
   padding: "8px 12px",
   cursor: "pointer",
+  marginTop: "5px",
 };
 
 const tableStyle = {
@@ -219,12 +214,4 @@ const tfootLabelStyle = {
 const tfootValueStyle = {
   padding: "8px",
   border: "1px solid #ddd",
-};
-
-const templateStyle = {
-  background: "#e6ecf5",
-  padding: "10px",
-  margin: "5px 0",
-  borderRadius: "5px",
-  cursor: "pointer",
 };
